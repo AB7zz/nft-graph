@@ -1,6 +1,7 @@
 import React from 'react'
 import { Link } from 'react-router-dom'
 import { useStateContext } from '../../context/StateContext'
+import { useAuthContext } from '../../context/AuthContext'
 
 // const nfts = [
 //     {
@@ -24,7 +25,8 @@ import { useStateContext } from '../../context/StateContext'
 // ]
 
 const NFTS = () => {
-  const { fetchNFTs, nfts } = useStateContext()
+  const { fetchNFTs, nfts, buyNFT } = useStateContext()
+  const { account } = useAuthContext()
   React.useEffect(() => {
     fetchNFTs()
   }, [])
@@ -32,13 +34,15 @@ const NFTS = () => {
     <div className='container mx-auto p-5'>
         <div className='grid grid-cols-3 gap-4'>
             {nfts && nfts.map((nft, i) => (
-            <div key={i+1} className='bg-gray-100 p-5 rounded-lg'>
-              <Link to={`/nft/${i+1}`} >
+            <div key={nft.id} className='bg-gray-100 p-5 rounded-lg'>
+              <Link to={`/nft/${nft.id}`} >
                 <img src={nft.url} alt={'NFT'} className='w-full rounded-lg' />
               </Link>
                 {/* <h1 className='text-xl font-semibold mt-2'>{nft.name}</h1> */}
                 <p className='text-gray-500'>Price: {nft.price} ETH</p>
-                <button className='hover:bg-blue-800 bg-blue-500 text-white px-4 py-2 mt-2 rounded'>Buy</button>
+                {nft.seller != account && <button
+                onClick={() => buyNFT(nft.id, nft.price * (10 ** 18))} 
+                className='hover:bg-blue-800 bg-blue-500 text-white px-4 py-2 mt-2 rounded'>Buy</button>}
             </div>
             ))}
         </div>

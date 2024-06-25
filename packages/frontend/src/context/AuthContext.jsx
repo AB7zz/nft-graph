@@ -14,6 +14,10 @@ export const AuthProvider = ({ children }) => {
             provider.send("eth_requestAccounts", []).then(async () => {
                 await accountChangedHandler(provider.getSigner());
             })
+
+            window.ethereum.on('accountsChanged', async() => {
+                await accountChangedHandler(provider.getSigner());
+            })
         } else {
             console.log("Please Install Metamask!!!");
         }
@@ -39,6 +43,8 @@ export const AuthProvider = ({ children }) => {
         <AuthContext.Provider value={{ 
             account, 
             balance,
+            setAccount,
+            setUserBalance,
             connect, 
             disconnect 
         }}>

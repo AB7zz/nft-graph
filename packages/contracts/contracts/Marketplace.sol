@@ -5,7 +5,7 @@ import "hardhat/console.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
-contract NFTMarketplace is ERC721URIStorage {
+contract Marketplace is ERC721URIStorage {
 
     //_tokenIds variable has the most recent minted tokenId
     uint256 private _tokenIds;

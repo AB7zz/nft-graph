@@ -4,6 +4,13 @@ pragma solidity ^0.8.10;
 import "hardhat/console.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+
+contract FractionalToken is ERC20 {
+    constructor(uint256 initialSupply) ERC20("FractionalNFT", "FNFT") {
+        _mint(msg.sender, initialSupply);
+    }
+}
 
 contract Marketplace is ERC721URIStorage {
 
@@ -24,6 +31,7 @@ contract Marketplace is ERC721URIStorage {
         address payable seller;
         uint256 price;
         bool currentlyListed;
+        address fractionalTokenAddress;
     }
 
     //the event emitted when a token is successfully listed
@@ -66,7 +74,10 @@ contract Marketplace is ERC721URIStorage {
     }
 
     //The first time a token is created, it is listed here
-    function createToken(string memory tokenURI, uint256 price) public payable returns (uint) {
+    function createToken(string memory tokenURI, uint256 price, uint256 fractionSupply) public payable returns (uint) {
+        //Make sure the sender sent enough ETH to pay for listing
+        require(msg.value == listPrice, "Hopefully sending the correct price");
+        
         //Increment the tokenId counter, which is keeping track of the number of minted NFTs
         _tokenIds++;
         uint256 newTokenId = _tokenIds;
@@ -78,14 +89,12 @@ contract Marketplace is ERC721URIStorage {
         _setTokenURI(newTokenId, tokenURI);
 
         //Helper function to update Global variables and emit an event
-        createListedToken(newTokenId, tokenURI, price);
+        createListedToken(newTokenId, tokenURI, price, fractionSupply);
 
         return newTokenId;
     }
 
-    function createListedToken(uint256 tokenId, string memory tokenURI, uint256 price) private {
-        //Make sure the sender sent enough ETH to pay for listing
-        require(msg.value == listPrice, "Hopefully sending the correct price");
+    function createListedToken(uint256 tokenId, string memory tokenURI, uint256 price, uint256 fractionSupply) private {
         //Just sanity check
         require(price > 0, "Make sure the price isn't negative");
 
@@ -96,8 +105,11 @@ contract Marketplace is ERC721URIStorage {
             payable(address(this)),
             payable(msg.sender),
             price,
-            true
+            true,
+            address(0)
         );
+
+        fractionalizeToken(tokenId, fractionSupply);
 
         _transfer(msg.sender, address(this), tokenId);
         //Emit the event for successful transfer. The frontend parses this message and updates the end user
@@ -109,6 +121,53 @@ contract Marketplace is ERC721URIStorage {
             price,
             true
         );
+
+        payable(owner).transfer(listPrice);
+    }
+
+    function fractionalizeToken(uint256 tokenId, uint256 fractionSupply) public {
+        require(idToListedToken[tokenId].fractionalTokenAddress == address(0), "Already fractionalized");
+
+        FractionalToken fractionalToken = new FractionalToken(fractionSupply);
+        idToListedToken[tokenId].fractionalTokenAddress = address(fractionalToken);
+
+        // Transfer all fractional tokens to the owner
+        fractionalToken.transfer(msg.sender, fractionSupply);
+
+        approveFractionTransfer(address(fractionalToken), fractionSupply);
+    }
+
+    function approveFractionTransfer(address fractionalTokenAddress, uint256 amount) public {
+        FractionalToken fractionalToken = FractionalToken(fractionalTokenAddress);
+        fractionalToken.approve(address(this), amount);
+    }
+
+
+    function buyFraction(uint256 tokenId, uint256 fractionAmount) public payable {
+        ListedToken storage listedToken = idToListedToken[tokenId];
+
+        uint256 fractionPrice;
+        FractionalToken fractionalToken = FractionalToken(listedToken.fractionalTokenAddress);
+        uint256 totalSupply = fractionalToken.totalSupply();
+        if (fractionAmount < totalSupply) {
+            fractionPrice = listedToken.price / totalSupply;
+            require(msg.value == fractionPrice * fractionAmount, "Incorrect ETH value sent");
+
+            uint256 allowance = fractionalToken.allowance(listedToken.owner, address(this));
+            require(allowance >= fractionAmount, "Contract not approved to transfer the required amount of tokens");
+
+            fractionalToken.transferFrom(listedToken.owner, msg.sender, fractionAmount);
+        } else if(fractionAmount == totalSupply) {
+            require(msg.value == listedToken.price, "Incorrect ETH value sent");
+            _transfer(address(this), msg.sender, tokenId);
+            listedToken.currentlyListed = false;
+            listedToken.seller = payable(msg.sender);
+            _itemsSold++;
+            approve(address(this), tokenId);
+            payable(listedToken.seller).transfer(msg.value);
+        } else {
+            revert("Requested fraction amount exceeds total supply");
+        }
     }
     
     //This will return all the NFTs currently listed to be sold on the marketplace
@@ -161,30 +220,5 @@ contract Marketplace is ERC721URIStorage {
         require(idToListedToken[tokenId].owner == msg.sender, "Only the owner can list the item");
 
         idToListedToken[tokenId].currentlyListed = true;
-    }
-
-    function executeSale(uint256 tokenId) public payable {
-        uint price = idToListedToken[tokenId].price;
-        address seller = idToListedToken[tokenId].seller;
-        require(msg.value == price, "Please submit the asking price in order to complete the purchase");
-
-        //update the details of the token
-        idToListedToken[tokenId].currentlyListed = false;
-        idToListedToken[tokenId].seller = payable(msg.sender);
-        _itemsSold++;
-
-        //Actually transfer the token to the new owner
-        _transfer(address(this), msg.sender, tokenId);
-        //approve the marketplace to sell NFTs on your behalf
-        approve(address(this), tokenId);
-
-        //Transfer the listing fee to the marketplace creator
-        payable(owner).transfer(listPrice);
-        //Transfer the proceeds from the sale to the seller of the NFT
-        payable(seller).transfer(msg.value);
-    }
-
-    //We might add a resell token function in the future
-    //In that case, tokens won't be listed by default but users can send a request to actually list a token
-    //Currently NFTs are listed by default
+    }   
 }

@@ -157,13 +157,19 @@ contract Marketplace is ERC721URIStorage {
         return items;
     }
 
+    function listTheNFT(uint256 tokenId) public payable {
+        require(idToListedToken[tokenId].owner == msg.sender, "Only the owner can list the item");
+
+        idToListedToken[tokenId].currentlyListed = true;
+    }
+
     function executeSale(uint256 tokenId) public payable {
         uint price = idToListedToken[tokenId].price;
         address seller = idToListedToken[tokenId].seller;
         require(msg.value == price, "Please submit the asking price in order to complete the purchase");
 
         //update the details of the token
-        idToListedToken[tokenId].currentlyListed = true;
+        idToListedToken[tokenId].currentlyListed = false;
         idToListedToken[tokenId].seller = payable(msg.sender);
         _itemsSold++;
 

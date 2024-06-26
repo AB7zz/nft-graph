@@ -1,5 +1,5 @@
 import React from 'react'
-import Navbar from '../components/Home/Navbar'
+import Navbar from '../components/Navbar'
 import Form from '../components/Mint/Form'
 
 const Mint = () => {

@@ -10,7 +10,9 @@ export const StateProvider = ({ children }) => {
 
   const { account } = useAuthContext()
 
-  const [nfts, setNfts] = React.useState([]);
+  const [nfts, setNFTs] = React.useState([]);
+
+  const [nft, setNFT] = React.useState({})
 
   const insertToIPFS = async (data) => {
     const url = `https://api.pinata.cloud/pinning/pinFileToIPFS`;
@@ -81,7 +83,7 @@ export const StateProvider = ({ children }) => {
           return readableNFT;
         });
         console.log(parsedNFTs)
-        setNfts(parsedNFTs);
+        setNFTs(parsedNFTs);
       } catch (error) {
         console.error("Error fetching NFTs:", error);
       }
@@ -110,6 +112,27 @@ export const StateProvider = ({ children }) => {
       // Handle transaction error (e.g., display error message)
     }
   };
+
+  const listTheNFT = async (tokenId) => {
+    if (!account) return
+    const signer = provider.getSigner();
+    const contract = new ethers.Contract(MarketplaceAddress, marketplace.abi, signer);
+  
+    if (!contract) return;
+
+    const tx = await contract.listTheNFT(tokenId);
+
+    console.log("Transaction hash:", tx.hash);
+
+    try {
+      await tx.wait();
+      console.log("Transaction confirmed!");
+      window.location.replace('/profile')
+    } catch (error) {
+      console.error("Error executing sale:", error);
+      // Handle transaction error (e.g., display error message)
+    }
+  };
     
   return (
     <StateContext.Provider value={{ 
@@ -117,6 +140,9 @@ export const StateProvider = ({ children }) => {
       createNFT,
       fetchNFTs,
       buyNFT,
+      listTheNFT,
+      setNFT,
+      nft,
       nfts
     }}>
     {children}

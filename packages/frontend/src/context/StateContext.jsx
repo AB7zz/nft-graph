@@ -7,6 +7,8 @@ import nftContract from '../abi/NFTContract.json'
 
 const StateContext = React.createContext()
 
+const signer = provider.getSigner()
+
 const marketplaceContract = new ethers.Contract(MarketplaceAddress, marketplace.abi, signer);
 const NFTContract = new ethers.Contract(NFTContractAddress, nftContract.abi, signer);
 

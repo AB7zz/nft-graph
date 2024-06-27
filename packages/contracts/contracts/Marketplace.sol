@@ -2,9 +2,8 @@
 pragma solidity ^0.8.10;
 
 import "hardhat/console.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
 contract FractionalToken is ERC20 {
     constructor(uint256 initialSupply) ERC20("FractionalNFT", "FNFT") {
@@ -12,7 +11,7 @@ contract FractionalToken is ERC20 {
     }
 }
 
-contract Marketplace is ERC721URIStorage {
+contract Marketplace is ERC721 {
 
     //_tokenIds variable has the most recent minted tokenId
     uint256 private _tokenIds;
@@ -58,58 +57,36 @@ contract Marketplace is ERC721URIStorage {
         owner = payable(msg.sender);
     }
 
-    function updateListPrice(uint256 _listPrice) public payable {
-        require(owner == msg.sender, "Only owner can update listing price");
-        listPrice = _listPrice;
-    }
-
-    function getListPrice() public view returns (uint256) {
-        return listPrice;
-    }
-
-    function getLatestIdToListedToken() public view returns (ListedToken memory) {
-        uint256 currentTokenId = _tokenIds;
-        return idToListedToken[currentTokenId];
-    }
-
-    function getListedTokenForId(uint256 tokenId) public view returns (ListedToken memory) {
-        return idToListedToken[tokenId];
-    }
-
-    function getCurrentToken() public view returns (uint256) {
-        return _tokenIds;
-    }
-
-    function getTotalSupplyOfTokens(address fractionalTokenAddress) public view returns (uint256) {
+    function getBalanceSupplyOfTokens(address fractionalTokenAddress) public view returns (uint256) {
         FractionalToken fractionalToken = FractionalToken(fractionalTokenAddress);
-        uint256 totalSupply = fractionalToken.totalSupply();
+        uint256 balanceSupply = fractionalToken.balanceOf(address(this));
 
-        return totalSupply;
+        return balanceSupply;
     }
 
     function getAllFractions() public view returns (FractOwner[] memory) {
         return addressToFractions[msg.sender];
     }
 
-    function addFractionOwnership(address owner, uint256 tokenId, uint256 fractionAmount) internal {
+    function addFractionOwnership(address owner, uint256 tokenId, uint256 _fractionAmount) internal {
         bool found = false;
         for (uint256 i = 0; i < addressToFractions[owner].length; i++) {
             if (addressToFractions[owner][i].tokenId == tokenId) {
-                addressToFractions[owner][i].fractionAmount += fractionAmount;
+                addressToFractions[owner][i].fractionAmount += _fractionAmount;
                 found = true;
                 break;
             }
         }
         if (!found) {
-            addressToFractions[owner].push(FractOwner(tokenId, fractionAmount));
+            addressToFractions[owner].push(FractOwner(tokenId, _fractionAmount));
         }
     }
 
-    function removeFractionOwnership(address owner, uint256 tokenId, uint256 fractionAmount) internal {
+    function removeFractionOwnership(address owner, uint256 tokenId, uint256 _fractionAmount) internal {
         for (uint256 i = 0; i < addressToFractions[owner].length; i++) {
             if (addressToFractions[owner][i].tokenId == tokenId) {
-                if (addressToFractions[owner][i].fractionAmount >= fractionAmount) {
-                    addressToFractions[owner][i].fractionAmount -= fractionAmount;
+                if (addressToFractions[owner][i].fractionAmount >= _fractionAmount) {
+                    addressToFractions[owner][i].fractionAmount -= _fractionAmount;
                     if (addressToFractions[owner][i].fractionAmount == 0) {
                         addressToFractions[owner][i] = addressToFractions[owner][addressToFractions[owner].length - 1];
                         addressToFractions[owner].pop();
@@ -120,28 +97,9 @@ contract Marketplace is ERC721URIStorage {
         }
     }
 
-    //The first time a token is created, it is listed here
-    function createToken(string memory tokenURI, uint256 price, uint256 fractionSupply) public payable returns (uint) {
-        //Make sure the sender sent enough ETH to pay for listing
-        require(msg.value == listPrice, "Hopefully sending the correct price");
-        
-        //Increment the tokenId counter, which is keeping track of the number of minted NFTs
-        _tokenIds++;
-        uint256 newTokenId = _tokenIds;
-
-        //Mint the NFT with tokenId newTokenId to the address who called createToken
-        _safeMint(msg.sender, newTokenId);
-
-        //Map the tokenId to the tokenURI (which is an IPFS URL with the NFT metadata)
-        _setTokenURI(newTokenId, tokenURI);
-
-        //Helper function to update Global variables and emit an event
-        createListedToken(newTokenId, tokenURI, price, fractionSupply);
-
-        return newTokenId;
-    }
-
     function createListedToken(uint256 tokenId, string memory tokenURI, uint256 price, uint256 fractionSupply) private {
+        require(msg.value == listPrice, "Hopefully sending the correct price");
+
         //Just sanity check
         require(price > 0, "Make sure the price isn't negative");
 

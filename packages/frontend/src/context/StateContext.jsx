@@ -1,10 +1,14 @@
 import React from 'react'
 import { ethers } from 'ethers'
 import { provider, useAuthContext } from './AuthContext'
-import { MarketplaceAddress } from '../constants'
+import { MarketplaceAddress, NFTContractAddress } from '../constants'
 import marketplace from '../abi/Marketplace.json'
+import nftContract from '../abi/NFTContract.json'
 
 const StateContext = React.createContext()
+
+const marketplaceContract = new ethers.Contract(MarketplaceAddress, marketplace.abi, signer);
+const NFTContract = new ethers.Contract(NFTContractAddress, nftContract.abi, signer);
 
 export const StateProvider = ({ children }) => {
 
@@ -45,16 +49,13 @@ export const StateProvider = ({ children }) => {
     return json.IpfsHash;
   }
 
-  const createNFT = async(tokenURI, price) => {
-    const signer = provider.getSigner();
-    const contract = new ethers.Contract(MarketplaceAddress, marketplace.abi, signer);
-  
-    
+  const createNFT = async(tokenURI, price, fractionSupply) => {
     const value = ethers.utils.parseEther("0.0005"); // 50 ETH in Wei
     const txOptions = { value };
   
     try {
-    const tx = await contract.createToken(tokenURI, price, txOptions);
+      const tokenId = await NFTContract.mintNFT(tokenURI);
+      const tx = await marketplaceContract.createListedToken(tokenId, tokenURI, price, fractionSupply, txOptions);
       console.log("Transaction hash:", tx.hash);
       const receipt = await tx.wait();
       console.log("Transaction mined:", receipt.transactionHash);
@@ -64,12 +65,9 @@ export const StateProvider = ({ children }) => {
   }
 
   const fetchNFTs = async () => {
-    const signer = provider.getSigner();
-    const contract = new ethers.Contract(MarketplaceAddress, marketplace.abi, signer);
-
-    if (contract) {
+    if (marketplaceContract) {
       try {
-        const fetchedNFTs = await contract.getAllNFTs();
+        const fetchedNFTs = await marketplaceContract.getAllNFTs();
         const parsedNFTs = fetchedNFTs.map((nftData) => {
           if(nftData[5]){
             const readableNFT = {
@@ -94,12 +92,10 @@ export const StateProvider = ({ children }) => {
 
   const buyNFT = async (tokenId, price) => {
     if (!account) return
-    const signer = provider.getSigner();
-    const contract = new ethers.Contract(MarketplaceAddress, marketplace.abi, signer);
-  
-    if (!contract) return;
+    
+    if (!marketplaceContract) return;
 
-    const tx = await contract.executeSale(tokenId, {
+    const tx = await marketplaceContract.executeSale(tokenId, {
       value: ethers.utils.parseEther(price.toString())
     });
 
@@ -117,12 +113,10 @@ export const StateProvider = ({ children }) => {
 
   const listTheNFT = async (tokenId) => {
     if (!account) return
-    const signer = provider.getSigner();
-    const contract = new ethers.Contract(MarketplaceAddress, marketplace.abi, signer);
-  
-    if (!contract) return;
+    
+    if (!marketplaceContract) return;
 
-    const tx = await contract.listTheNFT(tokenId);
+    const tx = await marketplaceContract.listTheNFT(tokenId);
 
     console.log("Transaction hash:", tx.hash);
 

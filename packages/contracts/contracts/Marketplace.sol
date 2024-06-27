@@ -34,6 +34,13 @@ contract Marketplace is ERC721URIStorage {
         address fractionalTokenAddress;
     }
 
+    struct FractOwner {
+        uint256 tokenId;
+        uint256 fractionAmount;
+    }
+
+    mapping(address => FractOwner[]) private addressToFractions;
+
     //the event emitted when a token is successfully listed
     event TokenListedSuccess (
         uint256 indexed tokenId,
@@ -71,6 +78,46 @@ contract Marketplace is ERC721URIStorage {
 
     function getCurrentToken() public view returns (uint256) {
         return _tokenIds;
+    }
+
+    function getTotalSupplyOfTokens(address fractionalTokenAddress) public view returns (uint256) {
+        FractionalToken fractionalToken = FractionalToken(fractionalTokenAddress);
+        uint256 totalSupply = fractionalToken.totalSupply();
+
+        return totalSupply;
+    }
+
+    function getAllFractions() public view returns (FractOwner[] memory) {
+        return addressToFractions[msg.sender];
+    }
+
+    function addFractionOwnership(address owner, uint256 tokenId, uint256 fractionAmount) internal {
+        bool found = false;
+        for (uint256 i = 0; i < addressToFractions[owner].length; i++) {
+            if (addressToFractions[owner][i].tokenId == tokenId) {
+                addressToFractions[owner][i].fractionAmount += fractionAmount;
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            addressToFractions[owner].push(FractOwner(tokenId, fractionAmount));
+        }
+    }
+
+    function removeFractionOwnership(address owner, uint256 tokenId, uint256 fractionAmount) internal {
+        for (uint256 i = 0; i < addressToFractions[owner].length; i++) {
+            if (addressToFractions[owner][i].tokenId == tokenId) {
+                if (addressToFractions[owner][i].fractionAmount >= fractionAmount) {
+                    addressToFractions[owner][i].fractionAmount -= fractionAmount;
+                    if (addressToFractions[owner][i].fractionAmount == 0) {
+                        addressToFractions[owner][i] = addressToFractions[owner][addressToFractions[owner].length - 1];
+                        addressToFractions[owner].pop();
+                    }
+                }
+                break;
+            }
+        }
     }
 
     //The first time a token is created, it is listed here
@@ -131,8 +178,8 @@ contract Marketplace is ERC721URIStorage {
         FractionalToken fractionalToken = new FractionalToken(fractionSupply);
         idToListedToken[tokenId].fractionalTokenAddress = address(fractionalToken);
 
-        // Transfer all fractional tokens to the owner
-        fractionalToken.transfer(msg.sender, fractionSupply);
+        // Transfer all fractional tokens to the owner (smart contract in this case)
+        fractionalToken.transfer(address(this), fractionSupply);
 
         approveFractionTransfer(address(fractionalToken), fractionSupply);
     }
@@ -157,14 +204,27 @@ contract Marketplace is ERC721URIStorage {
             require(allowance >= fractionAmount, "Contract not approved to transfer the required amount of tokens");
 
             fractionalToken.transferFrom(listedToken.owner, msg.sender, fractionAmount);
+
+            addFractionOwnership(msg.sender, tokenId, fractionAmount);
         } else if(fractionAmount == totalSupply) {
-            require(msg.value == listedToken.price, "Incorrect ETH value sent");
+            fractionPrice = listedToken.price / totalSupply;
+            require(msg.value == fractionPrice * fractionAmount, "Incorrect ETH value sent");
+
             _transfer(address(this), msg.sender, tokenId);
+
+            uint256 allowance = fractionalToken.allowance(listedToken.owner, address(this));
+            require(allowance >= fractionAmount, "Contract not approved to transfer the required amount of tokens");
+
+            fractionalToken.transferFrom(listedToken.owner, msg.sender, fractionAmount);
+
             listedToken.currentlyListed = false;
             listedToken.seller = payable(msg.sender);
             _itemsSold++;
+
             approve(address(this), tokenId);
             payable(listedToken.seller).transfer(msg.value);
+
+            removeFractionOwnership(msg.sender, tokenId, fractionAmount);
         } else {
             revert("Requested fraction amount exceeds total supply");
         }

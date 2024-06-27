@@ -71,16 +71,18 @@ export const StateProvider = ({ children }) => {
       try {
         const fetchedNFTs = await contract.getAllNFTs();
         const parsedNFTs = fetchedNFTs.map((nftData) => {
-          const readableNFT = {
-            id: parseInt(nftData[0]._hex, 16),
-            url: `https://${import.meta.env.VITE_GATEWAY_URL}/ipfs/${nftData[1]}`,
-            owner: nftData[2],
-            seller: nftData[3],
-            price: parseInt(nftData[4]._hex, 16) / (10**18),
-            listed: nftData[5]
-          };
-
-          return readableNFT;
+          if(nftData[5]){
+            const readableNFT = {
+              id: parseInt(nftData[0]._hex, 16),
+              url: `https://${import.meta.env.VITE_GATEWAY_URL}/ipfs/${nftData[1]}`,
+              owner: nftData[2],
+              seller: nftData[3],
+              price: parseInt(nftData[4]._hex, 16) / (10**18),
+              listed: nftData[5]
+            };
+  
+            return readableNFT;
+          }
         });
         console.log(parsedNFTs)
         setNFTs(parsedNFTs);

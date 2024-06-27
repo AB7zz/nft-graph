@@ -33,7 +33,7 @@ const NFTS = ({ nfts }) => {
     <div className='container mx-auto p-5'>
         <div className='grid grid-cols-3 gap-4'>
           {nfts.length > 0 ? nfts.map((nft, i) => (
-            <NFTCard nft={nft} />
+            <NFTCard key={nft.id} nft={nft} />
           ))
           :
           <h2 className='text-black text-center font-bold text-2xl'>No NFT's</h2>

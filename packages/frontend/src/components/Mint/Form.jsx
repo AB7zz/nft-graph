@@ -8,6 +8,7 @@ const Form = () => {
     name: '',
     description: '',
     price: 0,
+    fraction: 0
   });
 
   const handleChange = (event) => {
@@ -22,9 +23,11 @@ const Form = () => {
     event.preventDefault();
     console.log(formData);
 
-    const CID = await insertToIPFS(formData)
+    // const CID = await insertToIPFS(formData)
 
-    await createNFT(CID, formData.price * (10 ** 18))
+    await createNFT('QmaAoVfb7mzbAGNB5nZZsXGktt5QBjoaBXdyv4wku3rF2C', formData.price * (10 ** 18), formData.fraction)
+
+    // window.location.replace('/')
   };
   return (
     <div className='flex flex-col w-screen'>
@@ -56,6 +59,14 @@ const Form = () => {
         className='p-5 m-auto w-[50%] border-2 my-3'
         name="price"
         value={formData.price}
+        onChange={handleChange}
+      />
+      <input
+        type="number"
+        placeholder='Total Fractions'
+        className='p-5 m-auto w-[50%] border-2 my-3'
+        name="fraction"
+        value={formData.fraction}
         onChange={handleChange}
       />
       <button className='bg-blue-500 text-white px-4 py-2 mt-5 rounded w-[50%] m-auto' onClick={handleSubmit}>

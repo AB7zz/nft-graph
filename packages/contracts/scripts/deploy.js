@@ -3,19 +3,21 @@ const hre = require("hardhat");
 
 async function main() {
 
-  const marketplace = await hre.ethers.deployContract("Marketplace");
-  await marketplace.waitForDeployment();
-  
   const nft = await hre.ethers.deployContract("NFTContract");
   await nft.waitForDeployment();
 
-  console.log(
-    `Marketplace - ${marketplace.target}`
-  );
+  const marketplace = await hre.ethers.deployContract("Marketplace", [nft.target]);
+  await marketplace.waitForDeployment();
+  
 
   console.log(
     `NFT - ${nft.target}`
   );
+  
+  console.log(
+    `Marketplace - ${marketplace.target}`
+  );
+
 }
 
 // We recommend this pattern to be able to use async/await everywhere

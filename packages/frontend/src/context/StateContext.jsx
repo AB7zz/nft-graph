@@ -53,11 +53,14 @@ export const StateProvider = ({ children }) => {
 
   const createNFT = async(tokenURI, price, fractionSupply) => {
     const value = ethers.utils.parseEther("0.0005"); // 50 ETH in Wei
-    const txOptions = { value };
+    const txOptions = { 
+      value,
+      gasLimit: ethers.utils.hexlify(3000000)
+    };
   
     try {
-      const tokenId = await NFTContract.mintNFT(tokenURI);
-      const tx = await marketplaceContract.createListedToken(tokenId, tokenURI, price, fractionSupply, txOptions);
+      // const tokenId = await NFTContract.mintNFT(tokenURI);
+      const tx = await marketplaceContract.createListedToken(1, tokenURI, price, fractionSupply, txOptions);
       console.log("Transaction hash:", tx.hash);
       const receipt = await tx.wait();
       console.log("Transaction mined:", receipt.transactionHash);

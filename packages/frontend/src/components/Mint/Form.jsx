@@ -23,11 +23,9 @@ const Form = () => {
     event.preventDefault();
     console.log(formData);
 
-    // const CID = await insertToIPFS(formData)
+    const CID = await insertToIPFS(formData)
 
-    await createNFT('QmaAoVfb7mzbAGNB5nZZsXGktt5QBjoaBXdyv4wku3rF2C', formData.price * (10 ** 18), formData.fraction)
-
-    // window.location.replace('/')
+    await createNFT(CID, formData.price * (10 ** 18), formData.fraction)
   };
   return (
     <div className='flex flex-col w-screen'>

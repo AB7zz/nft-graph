@@ -12,6 +12,12 @@ module.exports = {
     sepolia: {
       url: process.env.SEPOLIA_TESTNET,
       accounts: [process.env.PRIVATE_KEY]
+    },
+    hardhat: {
+      accounts: {
+        mnemonic: process.env.SEED_PHRASE
+      },
+      chainId: 1337
     }
   },
 };

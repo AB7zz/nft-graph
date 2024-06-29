@@ -3,14 +3,12 @@ import { ethers } from 'ethers'
 import { provider, useAuthContext } from './AuthContext'
 import { MarketplaceAddress, NFTContractAddress } from '../constants'
 import marketplace from '../abi/Marketplace.json'
-import nftContract from '../abi/NFTContract.json'
 
 const StateContext = React.createContext()
 
 const signer = provider.getSigner()
 
 const marketplaceContract = new ethers.Contract(MarketplaceAddress, marketplace.abi, signer);
-const NFTContract = new ethers.Contract(NFTContractAddress, nftContract.abi, signer);
 
 export const StateProvider = ({ children }) => {
 
@@ -52,15 +50,15 @@ export const StateProvider = ({ children }) => {
   }
 
   const createNFT = async(tokenURI, price, fractionSupply) => {
-    const value = ethers.utils.parseEther("0.0005"); // 50 ETH in Wei
+    const value = ethers.utils.parseEther("0.0005"); // 0.0005 ETH to Wei
     const txOptions = { 
       value,
       gasLimit: ethers.utils.hexlify(3000000)
     };
   
     try {
-      // const tokenId = await NFTContract.mintNFT(tokenURI);
-      const tx = await marketplaceContract.createListedToken(1, tokenURI, price, fractionSupply, txOptions);
+      const tokenId = await marketplaceContract.mintNewNFT(tokenURI);
+      const tx = await marketplaceContract.createListedToken(tokenId, tokenURI, price, fractionSupply, txOptions);
       console.log("Transaction hash:", tx.hash);
       const receipt = await tx.wait();
       console.log("Transaction mined:", receipt.transactionHash);

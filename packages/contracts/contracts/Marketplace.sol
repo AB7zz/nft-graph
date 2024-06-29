@@ -3,7 +3,6 @@ pragma solidity =0.8.20;
 
 import "./NFTContract.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
 contract FractionalToken is ERC20 {
     constructor(uint256 initialSupply) ERC20("FractionalNFT", "FNFT") {

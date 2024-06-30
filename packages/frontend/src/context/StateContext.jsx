@@ -1,7 +1,7 @@
 import React from 'react'
 import { ethers } from 'ethers'
 import { provider, useAuthContext } from './AuthContext'
-import { MarketplaceAddress, NFTContractAddress } from '../constants'
+import { MarketplaceAddress } from '../constants'
 import marketplace from '../abi/Marketplace.json'
 
 const StateContext = React.createContext()
@@ -49,17 +49,15 @@ export const StateProvider = ({ children }) => {
     return json.IpfsHash;
   }
 
+
   const createNFT = async(tokenURI, price, fractionSupply) => {
     const value = ethers.utils.parseEther("0.0005"); // 0.0005 ETH to Wei
     const txOptions = { 
-      value,
-      gasLimit: ethers.utils.hexlify(3000000)
+      value
     };
   
     try {
-      const tokenId = await marketplaceContract.mintNewNFT(tokenURI);
-      const tx = await marketplaceContract.createListedToken(tokenId, tokenURI, price, fractionSupply, txOptions);
-      console.log("Transaction hash:", tx.hash);
+      const tx = await marketplaceContract.createListedToken(tokenURI, price, fractionSupply, txOptions);
       const receipt = await tx.wait();
       console.log("Transaction mined:", receipt.transactionHash);
     } catch (error) {
@@ -70,6 +68,7 @@ export const StateProvider = ({ children }) => {
   const fetchNFTs = async () => {
     if (marketplaceContract) {
       try {
+        console.log(marketplaceContract)
         const fetchedNFTs = await marketplaceContract.getAllNFTs();
         const parsedNFTs = fetchedNFTs.map((nftData) => {
           if(nftData[5]){

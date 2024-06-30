@@ -8,6 +8,7 @@
   },
   "scripts": {
     "deploy": "npx hardhat run --network hardhat scripts/deploy.js",
+    "node": "npx hardhat node",
     "compile": "npx hardhat compile"
   }
 }

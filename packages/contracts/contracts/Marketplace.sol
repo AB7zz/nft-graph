@@ -101,15 +101,13 @@ contract Marketplace {
         }
     }
 
-    function mintNewNFT(string memory tokenURI) external returns (uint256) {
-        return nftContract.mintNFT(msg.sender, tokenURI);
-    }
-
-    function createListedToken(uint256 tokenId, string memory tokenURI, uint256 price, uint256 fractionSupply) public payable {
+    function createListedToken(string memory tokenURI, uint256 price, uint256 fractionSupply) public payable {
         require(msg.value == listPrice, "Hopefully sending the correct price");
 
         //Just sanity check
         require(price > 0, "Make sure the price isn't negative");
+
+        uint256 tokenId = nftContract.mintNFT(msg.sender, tokenURI);
 
         //Update the mapping of tokenId's to Token details, useful for retrieval functions
         idToListedToken[tokenId] = ListedToken(

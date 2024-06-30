@@ -4,6 +4,7 @@ require('dotenv').config()
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
   solidity: "0.8.20",
+  defaultNetwork: "hardhat",
   networks: {
     amoy: {
       url: process.env.AMOY_TESTNET,
@@ -15,9 +16,9 @@ module.exports = {
     },
     hardhat: {
       accounts: {
-        mnemonic: process.env.SEED_PHRASE
+        mnemonic: process.env.SEED_PHRASE,
       },
-      chainId: 1337
-    }
+      chainId: 1337,
+    },
   },
 };

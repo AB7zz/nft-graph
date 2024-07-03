@@ -73,6 +73,12 @@ export const StateProvider = ({ children }) => {
     }
   }
 
+  const getFractionalBalance = async (fractionalAddress) => {
+    const balance = await marketplaceContract.getBalanceSupplyOfTokens(fractionalAddress);
+    console.log(parseInt(balance._hex, 16))
+    return parseInt(balance._hex, 16);
+  }
+
   const fetchNFTs = async () => {
     if (marketplaceContract) {
       try {
@@ -86,7 +92,8 @@ export const StateProvider = ({ children }) => {
               owner: nftData[2],
               seller: nftData[3],
               price: parseInt(nftData[4]._hex, 16) / (10**18),
-              listed: nftData[5]
+              listed: nftData[5],
+              fractionalAddress: nftData[6]
             };
   
             return readableNFT;
@@ -100,14 +107,31 @@ export const StateProvider = ({ children }) => {
     }
   };
 
-  const buyNFT = async (tokenId, price) => {
+  const buyNFT = async (tokenId, price, fraction) => {
+    if(fraction <= 0) return
+
     if (!account) return
     
     if (!marketplaceContract) return;
 
-    const tx = await marketplaceContract.executeSale(tokenId, {
-      value: ethers.utils.parseEther(price.toString())
-    });
+    if (price <= 0) return
+
+    const value = ethers.utils.parseEther(price.toString());
+
+    const gasEstimate = await marketplaceContract.estimateGas.buyFraction(tokenId, fraction, { value });
+
+    const gasPrice = await provider.getGasPrice();
+    const maxPriorityFeePerGas = ethers.utils.parseUnits('2', 'gwei'); // You can adjust this value based on current network conditions
+    const maxFeePerGas = gasPrice.add(maxPriorityFeePerGas);
+
+    const txOptions = { 
+      value,
+      gasLimit: gasEstimate,
+      maxPriorityFeePerGas,
+      maxFeePerGas
+    };
+
+    const tx = await marketplaceContract.buyFraction(tokenId, fraction, txOptions);
 
     console.log("Transaction hash:", tx.hash);
 
@@ -148,6 +172,7 @@ export const StateProvider = ({ children }) => {
       buyNFT,
       listTheNFT,
       setNFT,
+      getFractionalBalance,
       nft,
       nfts
     }}>

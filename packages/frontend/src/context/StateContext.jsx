@@ -52,8 +52,16 @@ export const StateProvider = ({ children }) => {
 
   const createNFT = async(tokenURI, price, fractionSupply) => {
     const value = ethers.utils.parseEther("0.0005"); // 0.0005 ETH to Wei
+    const gasEstimate = await marketplaceContract.estimateGas.createListedToken(tokenURI, price, fractionSupply, { value });
+
+    const gasPrice = await provider.getGasPrice();
+    const maxPriorityFeePerGas = ethers.utils.parseUnits('2', 'gwei'); // You can adjust this value based on current network conditions
+    const maxFeePerGas = gasPrice.add(maxPriorityFeePerGas);
     const txOptions = { 
-      value
+      value,
+      gasLimit: gasEstimate,
+      maxPriorityFeePerGas,
+      maxFeePerGas
     };
   
     try {

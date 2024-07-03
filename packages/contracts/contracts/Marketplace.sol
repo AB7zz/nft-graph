@@ -172,6 +172,8 @@ contract Marketplace {
             fractionalToken.transferFrom(listedToken.owner, msg.sender, fractionAmount);
 
             addFractionOwnership(msg.sender, tokenId, fractionAmount);
+
+            listedToken.price -= (fractionPrice * fractionAmount);
         } else if(fractionAmount == totalSupply) {
             fractionPrice = listedToken.price / totalSupply;
             require(msg.value == fractionPrice * fractionAmount, "Incorrect ETH value sent");
@@ -191,6 +193,8 @@ contract Marketplace {
             payable(listedToken.seller).transfer(msg.value);
 
             removeFractionOwnership(msg.sender, tokenId, fractionAmount);
+            
+            listedToken.price -= (fractionPrice * fractionAmount);
         } else {
             revert("Requested fraction amount exceeds total supply");
         }

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { useStateContext } from '../context/StateContext'
 import { useAuthContext } from '../context/AuthContext'
 
-const NFTCard = ({ nft }) => {
+const NFTCard = ({ fractional, nft }) => {
   const { account } = useAuthContext()
 
   const { buyNFT, listTheNFT, setNFT, getFractionalBalance } = useStateContext()
@@ -36,9 +36,9 @@ const NFTCard = ({ nft }) => {
       </Link>
         {/* <h1 className='text-xl font-semibold mt-2'>{nft.name}</h1> */}
         <p className='text-gray-500'><b>Price:</b> {price} ETH for {fraction} fractions</p>
-        <p className='text-gray-500'><b>Total Fractions:</b> {totalFractions}</p>
+        {fractional == false ? <p className='text-gray-500'><b>Total Fractions:</b> {totalFractions}</p> : <p className='text-gray-500'><b>Fractions Owned:</b> {nft.fractionAmount}</p>}
         
-        {nft.seller != account && 
+        {fractional === false && nft.seller != account && 
         <div className='flex mt-5'>
           <button
             onClick={() => buyNFT(nft.id, price, fraction)} 

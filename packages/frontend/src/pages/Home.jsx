@@ -11,7 +11,7 @@ const Home = () => {
   return (
     <>
       <Navbar />
-      <NFTS nfts={nfts} />
+      <NFTS fractional={false} nfts={nfts} />
     </>
   )
 }

@@ -18,6 +18,8 @@ export const StateProvider = ({ children }) => {
 
   const [nft, setNFT] = React.useState({})
 
+  const [myFractions, setMyFractions] = React.useState([])
+
   const insertToIPFS = async (data) => {
     const url = `https://api.pinata.cloud/pinning/pinFileToIPFS`;
     const formData = new FormData();
@@ -77,6 +79,28 @@ export const StateProvider = ({ children }) => {
     const balance = await marketplaceContract.getBalanceSupplyOfTokens(fractionalAddress);
     console.log(parseInt(balance._hex, 16))
     return parseInt(balance._hex, 16);
+  }
+
+  const fetchMyFractions = async () => {
+    if (marketplaceContract) {
+      console.log('yes')
+      try {
+        const fetchedFractions = await marketplaceContract.getAllFractions();
+        const parsedFractions = fetchedFractions.map((fractionData) => {
+          const readableFraction = {
+            tokenId: parseInt(fractionData.tokenId._hex, 16),
+            fractionAmount: parseInt(fractionData.fractionAmount._hex, 16),
+          }
+          return readableFraction
+        })
+        console.log(parsedFractions)
+        setMyFractions(parsedFractions)
+      } catch (error) {
+        console.error("Error fetching Fractions:", error);
+      }
+    }else{
+      console.log('nope')
+    }
   }
 
   const fetchNFTs = async () => {
@@ -173,6 +197,8 @@ export const StateProvider = ({ children }) => {
       listTheNFT,
       setNFT,
       getFractionalBalance,
+      fetchMyFractions,
+      myFractions,
       nft,
       nfts
     }}>
